@@ -35,6 +35,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleHome)
+	mux.HandleFunc("/mail", handleMail)
 
 	server := &http.Server{
 		ReadTimeout:  5 * time.Second,
