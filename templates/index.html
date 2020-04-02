@@ -1,0 +1,14 @@
+{{ define "content" }}
+<h1>Hello, world!</h1>
+
+<p>this is a description</p>
+
+{{ range .Posts }}
+    <div>
+        <p>thing</p>
+        <h1>{{ .Title }}</h1>
+        <p>{{ .Body }}</p>
+    </div>
+{{ end }}
+
+{{ end }}

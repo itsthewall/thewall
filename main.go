@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -13,11 +14,50 @@ import (
 
 var (
 	addr  = flag.String("addr", "localhost:8080", "address to host the server on")
-	dbURI = flag.String("db", "", "uri to access postgres database")
+	dbURI = flag.String("db", "user=postgres password=password dbname=wall", "uri to access postgres database")
 )
 
+type User struct {
+	ID    int64
+	Name  string
+	Email string
+}
+
+type Block struct {
+	ID    int64
+	Title string
+}
+
+type Post struct {
+	ID int64
+
+	BlockID int64
+	UserID  int64
+
+	Title string
+	Body  string
+}
+
 func handleHome(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "hello, world!")
+	t := template.Must(template.ParseFiles("templates/index.html", "templates/_layout.html"))
+
+	type Data struct {
+		Msg   string
+		Posts []Post
+	}
+
+	data := Data{
+		Posts: []Post{
+			{Title: "hello world", Body: "goodbye!"},
+			{Title: "hello world", Body: "goodbye!"},
+			{Title: "hello world", Body: "goodbye!"},
+		},
+	}
+
+	err := t.ExecuteTemplate(w, "_layout", data)
+	if err != nil {
+		fmt.Fprintln(w)
+	}
 }
 
 func main() {
