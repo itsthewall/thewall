@@ -3,11 +3,17 @@
 
 <p>this is a description</p>
 
-{{ range .Posts }}
-    <div>
-        <p>thing</p>
+{{ range .Blocks }}
+    <div class="block">
         <h1>{{ .Title }}</h1>
-        <p>{{ .Body }}</p>
+
+        {{ range .Posts }}
+            <div class="post">
+                <h2>{{ .Title }}</h2>
+
+                <p>{{ .Body }}</p>
+            </div>
+        {{ end }}
     </div>
 {{ end }}
 

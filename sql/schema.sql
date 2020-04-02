@@ -3,7 +3,7 @@ DROP TABLE IF EXISTS posts, blocks, users;
 CREATE TABLE users (
 		id SERIAL PRIMARY KEY,
 		name VARCHAR UNIQUE NOT NULL,
-		email VARCHAR UNIQUE NOT NUll
+		email VARCHAR UNIQUE NOT NULL
 );
 
 CREATE TABLE blocks (
