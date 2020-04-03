@@ -6,6 +6,9 @@ import (
 	"log"
 )
 
+// migration describes a SQL operation which gets ran everytime the server is started. This is _not_ the right way to do this forever, but it works for now.
+//
+// here are some examples on writing idempotent migrations in postgres: https://gist.github.com/michelmilezzi/8f30607cdf9389ea35ff7548bb0226fe
 type migration struct {
 	name string
 	up   string
@@ -40,13 +43,12 @@ CREATE TABLE IF NOT EXISTS posts (
 	{
 		name: "add created_at timestamps",
 		up: `
-BEGIN;
-
-ALTER TABLE users ADD created_at TIMESTAMP NOT NULL DEFAULT NOW();
-ALTER TABLE blocks ADD created_at TIMESTAMP NOT NULL DEFAULT NOW();
-ALTER TABLE posts ADD created_at TIMESTAMP NOT NULL DEFAULT NOW();
-
-COMMIT;
+DO $$
+BEGIN
+	ALTER TABLE users ADD COLUMN created_at TIMESTAMP;
+EXCEPTION WHEN duplicate_column THEN
+	RAISE NOTICE 'Field already exists. Ignoring...';
+END$$;
 		`,
 	},
 }
