@@ -35,7 +35,6 @@ type User struct {
 type Block struct {
 	ID    int64
 	Title string
-	Posts []Post
 
 	Time time.Time
 }
@@ -56,14 +55,21 @@ var funcMap template.FuncMap = template.FuncMap{
 	"Format": time.Time.Format,
 }
 
-
 func handleHome(w http.ResponseWriter, r *http.Request) {
-	t := template.Must(
-		template.New("index").Funcs(funcMap).ParseFiles("templates/index.html", "templates/_layout.html"))
+	t := template.Must(template.New("index").Funcs(funcMap).ParseFiles("templates/index.html", "templates/_layout.html"))
+
+	type PostInfo struct {
+		Post
+		ByUser string
+	}
+
+	type BlockInfo struct {
+		Block
+		Posts []PostInfo
+	}
 
 	type Data struct {
-		Msg    string
-		Blocks []Block
+		Blocks []BlockInfo
 	}
 
 	const blocksQuery = `SELECT id, title FROM blocks ORDER BY id DESC;`
@@ -79,33 +85,44 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	data := Data{}
 
 	for blocks.Next() {
-		b := Block{}
-		if err := blocks.Scan(&b.ID, &b.Title); err != nil {
+		bi := BlockInfo{}
+		if err := blocks.Scan(&bi.ID, &bi.Title); err != nil {
 			// TODO(harrison): don't send DB errors to users!
 			fmt.Fprintln(w, err)
 
 			return
 		}
 
-		const postQuery = `SELECT id, block_id, user_id, title, body, created_at FROM posts WHERE block_id = $1`
-		posts, err := conn.Query(postQuery, b.ID)
+		const postQuery = `
+SELECT
+	posts.id, posts.block_id, posts.user_id, posts.title, posts.body, posts.created_at, users.name
+FROM
+	posts, users
+WHERE
+	posts.user_id = users.id AND block_id = $1
+`
+		posts, err := conn.Query(postQuery, bi.ID)
+		if err != nil {
+			// TODO(harrison): don't send DB errors to the user dummy!
+			fmt.Fprintln(w, err)
+
+			return
+		}
 
 		for posts.Next() {
-			p := Post{}
+			pi := PostInfo{}
 
-			if err = posts.Scan(&p.ID, &p.BlockID, &p.UserID, &p.Title, &p.Body, &p.Time); err != nil {
+			if err = posts.Scan(&pi.ID, &pi.BlockID, &pi.UserID, &pi.Title, &pi.Body, &pi.Time, &pi.ByUser); err != nil {
 				// TODO(harrison): BAD.
 				fmt.Fprintln(w, err)
 
 				return
 			}
 
-			// const userQuery = `SELECT name FROM users WHERE id = `
-
-			b.Posts = append(b.Posts, p)
+			bi.Posts = append(bi.Posts, pi)
 		}
 
-		data.Blocks = append(data.Blocks, b)
+		data.Blocks = append(data.Blocks, bi)
 	}
 
 	err = t.ExecuteTemplate(w, "_layout", data)
