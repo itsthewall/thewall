@@ -51,7 +51,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 		Blocks []Block
 	}
 
-	const blocksQuery = `SELECT id, title FROM blocks;`
+	const blocksQuery = `SELECT id, title FROM blocks ORDER BY id DESC;`
 
 	blocks, err := conn.Query(blocksQuery)
 	if err != nil {
@@ -114,6 +114,10 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleHome)
 	mux.HandleFunc("/mail", handleMail)
+
+	//Serve static files
+	staticHandler := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
+	mux.Handle("/static/", staticHandler)
 
 	server := &http.Server{
 		ReadTimeout:  5 * time.Second,

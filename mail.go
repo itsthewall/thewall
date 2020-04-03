@@ -22,7 +22,7 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 	//resending emails.
 	defer io.WriteString(w, "Received.")
 
-	//TODO Verify that the request is coming from send grid.
+	//TODO(obi) Verify that the request is coming from send grid.
 
 	rawEmail, err := getRawEmail(r)
 	if err != nil {
