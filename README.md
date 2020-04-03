@@ -2,5 +2,5 @@
 
 ## Development instructions
 
-- before you can begin hacking, you need to seed the DB. run `psql <dbname> < sql/schema.sql`
-- to get some test data in, do a good old `psql <dbname> < sql/seed.sql`
+- run the binary once, it will run all the migrations and set up the DB for you.
+- to put some test data in the DB run `$ psql <DBNAME> < sql/seed.sql`
