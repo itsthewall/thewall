@@ -31,6 +31,8 @@ type Block struct {
 	ID    int64
 	Title string
 	Posts []Post
+
+	Time time.Time
 }
 
 type Post struct {
@@ -41,10 +43,18 @@ type Post struct {
 
 	Title string
 	Body  string
+
+	Time time.Time
 }
 
+var funcMap template.FuncMap = template.FuncMap{
+	"Format": time.Time.Format,
+}
+
+
 func handleHome(w http.ResponseWriter, r *http.Request) {
-	t := template.Must(template.ParseFiles("templates/index.html", "templates/_layout.html"))
+	t := template.Must(
+		template.New("index").Funcs(funcMap).ParseFiles("templates/index.html", "templates/_layout.html"))
 
 	type Data struct {
 		Msg    string
@@ -72,18 +82,20 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		const postQuery = `SELECT id, block_id, user_id, title, body FROM posts WHERE block_id = $1`
+		const postQuery = `SELECT id, block_id, user_id, title, body, created_at FROM posts WHERE block_id = $1`
 		posts, err := conn.Query(postQuery, b.ID)
 
 		for posts.Next() {
 			p := Post{}
 
-			if err = posts.Scan(&p.ID, &p.BlockID, &p.UserID, &p.Title, &p.Body); err != nil {
+			if err = posts.Scan(&p.ID, &p.BlockID, &p.UserID, &p.Title, &p.Body, &p.Time); err != nil {
 				// TODO(harrison): BAD.
 				fmt.Fprintln(w, err)
 
 				return
 			}
+
+			// const userQuery = `SELECT name FROM users WHERE id = `
 
 			b.Posts = append(b.Posts, p)
 		}
