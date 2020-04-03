@@ -1,23 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
-	"net/mail"
 
 	parsemail "github.com/DusanKasan/Parsemail"
 )
-
-type Post struct { //Simple representation of emails for now.
-	Title string
-	Body  string
-	Email *mail.Address
-}
 
 func handleMail(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
@@ -27,7 +20,6 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 	}
 	//Always respond with a 200 status code to prevent send grid from
 	//resending emails.
-	defer w.WriteHeader(200)
 	defer io.WriteString(w, "Received.")
 
 	//TODO Verify that the request is coming from send grid.
@@ -47,13 +39,43 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post := Post{
-		Title: email.Subject,
-		Body:  email.TextBody,
-		Email: email.From[0],
+	const userQuery string = "SELECT id, name, email FROM users WHERE email = $1;"
+	user := User{}
+
+	row := conn.QueryRow(userQuery, email.From[0].Address)
+	if err := row.Scan(&user.ID, &user.Name, &user.Email); err == sql.ErrNoRows {
+		log.Println("Email from unknown user: ", email.From[0].String())
+		return
+	} else if err != nil {
+		log.Println("Database error: ", err)
+		return
 	}
 
-	fmt.Printf("%v: %v\n%v", post.Title, post.Email.String(), post.Body)
+	const currentBlock string = `SELECT id FROM blocks ORDER BY id DESC 
+		FETCH FIRST ROW ONLY;`
+	row = conn.QueryRow(currentBlock)
+	var blockID int64
+	if err := row.Scan(&blockID); err != nil {
+		log.Println("Database error: ", err)
+		return
+	}
+
+	post := Post{
+		Title:   email.Subject,
+		Body:    email.TextBody,
+		UserID:  user.ID,
+		BlockID: blockID,
+	}
+
+	const insertPost string = `INSERT INTO posts (block_id, user_id, title, body)
+		VALUES ($1, $2, $3, $4);`
+	_, err = conn.Exec(insertPost, post.BlockID, post.UserID, post.Title, post.Body)
+	if err != nil {
+		log.Println("Database insert error: ", err)
+		return
+	}
+
+	log.Printf("Added a post to block %v by %v", post.BlockID, user.Name)
 }
 
 func getRawEmail(r *http.Request) (io.Reader, error) {
