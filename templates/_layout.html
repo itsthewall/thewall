@@ -4,13 +4,23 @@
     <title>The Wall</title>
     <link rel="stylesheet" href="static/style.css">
     <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css?family=Tinos">
+          href="https://fonts.googleapis.com/css2?family=Tinos&family=Roboto">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
     <div class="document">
         {{ template "content" . }}
+        <div class="footer">
+            A wall that brings those you love together instead of keeping them a part. <br>
+            © 2020 <a href="https://github.com/itsthewall">
+            The Wall</a> - <a href="https://github.com/itsthewall/thewall/blob/master/LICENSE">License</a> 
+            - <a href="">Repo</a>
+        </div>
     </div>
 </body>
 </html>
 {{ end }}
+
+
+html

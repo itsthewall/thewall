@@ -111,9 +111,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := migrate(conn); err != nil {
-		log.Fatal(err)
-	}
+	// if err := migrate(conn); err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleHome)

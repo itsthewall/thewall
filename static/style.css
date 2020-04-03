@@ -1,15 +1,51 @@
 html {
-    font-family: Georgia, 'Times New Roman', Times, serif;
+    /* font-family: Georgia, 'Times New Roman', Times, serif; */
     box-sizing: border-box;
-    /* font-family: 'Tinos', 'Times New Roman', Times, serif */
+    font-family: 'Tinos', 'Times New Roman', Times, serif;
+    background-color: white;
+}
+
+a {
+    text-decoration-line: none;
+    color: black;
+}
+
+a:hover {
+    text-decoration-line: underline;
+}
+
+.document {
+    width: 950px;
+    margin: 30px auto 0 auto;
+}
+
+@media screen and (max-width: 950px) {
+    .document {
+        width: auto !important;
+    }
+}
+
+.header a {
+    text-decoration-line: none;
+    color: #838383;
+    font-style: italic;
+}
+.header a:hover {
+    text-decoration-line: underline;
 }
 
 h1, h2, h3, h4 {
     font-weight: normal;
 }
+.header {
+    margin-top: 36px;
+    margin-bottom: 20px;
+}
 
-h1 {
-    font-size: 36pt;
+.header h1 {
+    font-size: 64pt;
+    margin: 0;
+    margin-bottom: 10px;
 }
 
 .block-header {
@@ -21,7 +57,7 @@ h1 {
 .block-header h3 {
     float: right;
     margin: 0;
-    color: lightslategray;
+    color: #838383;
 }
 
 .horizontal-bar {
@@ -33,14 +69,9 @@ h1 {
     margin-bottom: 5px;
 }
 
-.document {
-    width: 950px;
-    margin: 30px auto 0 auto;
-}
-
 .post {
     border-right: 1px solid black;
-    margin: 30px 12px 0 0;
+    margin: 15px 12px 15px 0;
     padding-right: 15px;
     padding-bottom: 5px;
     text-align: justify;
@@ -49,6 +80,7 @@ h1 {
 .post-header h2, .post-header h3 {
     display: inline;
 }
+
 
 .whitespace {
     display: inline-block;
@@ -59,4 +91,34 @@ h1 {
     float: right;
     font-size: larger;
     color: black;
+    text-decoration-line: none;
+}
+
+.post-id:hover {
+    text-decoration-line: underline;
+}
+
+.next-block {
+    float: right;
+    color: #838383;
+}
+
+.footer {
+    margin: 20px, ;
+    text-align: center;
+    color: #838383;
+    font-size: small;
+}
+.footer a {
+    color: #838383;
+}
+
+.horizontal-small-line {
+    width: 20%;
+    margin: 0 auto 0 auto;
+    border-top: 1px solid lightgray;
+}
+
+.horizontal-small-line:last-child {
+    display: none;
 }
