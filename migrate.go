@@ -45,7 +45,9 @@ CREATE TABLE IF NOT EXISTS posts (
 		up: `
 DO $$
 BEGIN
-	ALTER TABLE users ADD COLUMN created_at TIMESTAMP;
+	ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
+	ALTER TABLE posts ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
+	ALTER TABLE blocks ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
 EXCEPTION WHEN duplicate_column THEN
 	RAISE NOTICE 'Field already exists. Ignoring...';
 END$$;
