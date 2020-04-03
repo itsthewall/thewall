@@ -55,7 +55,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 
 	blocks, err := conn.Query(blocksQuery)
 	if err != nil {
-		// TODO(harrison): don't send DB errors dummy to the user dummy!
+		// TODO(harrison): don't send DB errors to the user dummy!
 		fmt.Fprintln(w, err)
 
 		return
@@ -108,6 +108,10 @@ func main() {
 
 	err = conn.Ping()
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := migrate(conn); err != nil {
 		log.Fatal(err)
 	}
 
