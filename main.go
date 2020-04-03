@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"html/template"
@@ -12,9 +14,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const tokenSize = 64
+
 var (
-	addr  = flag.String("addr", "localhost:8080", "address to host the server on")
-	dbURI = flag.String("db", "user=postgres password=password dbname=wall", "uri to access postgres database")
+	addr     = flag.String("addr", "localhost:8080", "address to host the server on")
+	dbURI    = flag.String("db", "", "uri to access postgres database")
+	password = flag.String("password", "", "password for access to the server")
 )
 
 var (
@@ -109,6 +114,93 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handlePassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		type Data struct {
+			DidError bool
+		}
+
+		t := template.Must(template.ParseFiles("templates/password.html", "templates/_layout.html"))
+
+		err := t.ExecuteTemplate(w, "_layout", Data{DidError: r.URL.Query().Get("error") == "true"})
+		if err != nil {
+			fmt.Fprintln(w, err)
+		}
+
+		return
+	}
+
+	r.ParseForm()
+
+	if r.FormValue("password") != *password {
+		http.Redirect(w, r, "/password?error=true", http.StatusFound)
+
+		return
+	}
+
+	blk := make([]byte, tokenSize)
+	_, err := rand.Read(blk)
+	if err != nil {
+		// TODO(harrison): handle errors properly
+		fmt.Fprintln(w, err)
+
+		return
+	}
+
+	token := hex.EncodeToString(blk)
+
+	query := `INSERT INTO tokens (token) VALUES ($1);`
+	_, err = conn.Exec(query, token)
+	if err != nil {
+		// TODO(harrison): handle errors properly
+		fmt.Fprintln(w, err)
+
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:  "Auth",
+		Value: token,
+		// NOTE(harrison): Commented this out because we don't actually enforce it in the DB
+		// Expires: time.Now().AddDate(0, 0, 7),
+	})
+
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func authenticateOr(f http.HandlerFunc, or string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		for _, c := range r.Cookies() {
+			if c.Name != "Auth" {
+				continue
+			}
+
+			query := `SELECT id FROM tokens WHERE token = $1`
+			row := conn.QueryRow(query, c.Value)
+
+			var id int64
+			err := row.Scan(&id)
+
+			if err == sql.ErrNoRows {
+				fmt.Fprintln(w, "auth error. sorry!")
+
+				break
+			} else if err != nil {
+				// TODO(harrison): handle actual error
+				fmt.Fprintln(w, err)
+
+				return
+			}
+
+			f(w, r)
+
+			return
+		}
+
+		http.Redirect(w, r, or, http.StatusFound)
+	}
+}
+
 func main() {
 	var err error
 	flag.Parse()
@@ -128,10 +220,15 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handleHome)
+
+	// User routes
+	mux.HandleFunc("/", authenticateOr(handleHome, "/password"))
+	mux.HandleFunc("/password", handlePassword)
+
+	// API routes
 	mux.HandleFunc("/mail", handleMail)
 
-	//Serve static files
+	// Serve static files
 	staticHandler := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
 	mux.Handle("/static/", staticHandler)
 

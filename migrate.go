@@ -51,6 +51,15 @@ EXCEPTION WHEN duplicate_column THEN
 END$$;
 		`,
 	},
+	{
+		name: "tokens table for auth",
+		up: `
+CREATE TABLE IF NOT EXISTS tokens (
+	id SERIAL PRIMARY KEY,
+	token VARCHAR UNIQUE NOT NULL
+);
+		`,
+	},
 }
 
 func migrate(db *sql.DB) error {
