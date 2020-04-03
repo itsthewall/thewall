@@ -1,18 +1,16 @@
 {{ define "_layout" }}
 <html>
-    <head>
-        <title>The Wall</title>
-<style>
-.block {
-    border: 1px solid black;
-    margin-bottom: 5px;
-    padding: 10px;
-}
-</style>
-    </head>
+<head>
+    <title>The Wall</title>
+    <link rel="stylesheet" href="static/style.css">
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Tinos">
+</head>
 
-    <body>
+<body>
+    <div class="document">
         {{ template "content" . }}
-    </body>
+    </div>
+</body>
 </html>
 {{ end }}
