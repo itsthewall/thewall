@@ -6,9 +6,6 @@ import (
 	"log"
 )
 
-// migration describes a SQL operation which gets ran everytime the server is started. This is _not_ the right way to do this forever, but it works for now.
-//
-// here are some examples on writing idempotent migrations in postgres: https://gist.github.com/michelmilezzi/8f30607cdf9389ea35ff7548bb0226fe
 type migration struct {
 	name string
 	up   string
