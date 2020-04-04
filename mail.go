@@ -1,15 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"os"
+	"time"
 
-	parsemail "github.com/DusanKasan/Parsemail"
+	parsemail "github.com/DusanKasan/parsemail"
 )
 
 func handleMail(w http.ResponseWriter, r *http.Request) {
@@ -21,6 +26,7 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 	//Always respond with a 200 status code to prevent send grid from
 	//resending emails.
 	defer io.WriteString(w, "Received.")
+	defer w.WriteHeader(http.StatusOK)
 
 	//TODO(obi) Verify that the request is coming from send grid.
 
@@ -29,6 +35,7 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+
 	email, err := parsemail.Parse(rawEmail)
 	if err != nil {
 		log.Printf("Error parsing email: %v", err)
@@ -37,6 +44,13 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 
 	if len(email.From) == 0 {
 		return
+	}
+
+	for _, embedded := range email.EmbeddedFiles {
+		fmt.Println(embedded)
+	}
+	for _, attached := range email.Attachments {
+		fmt.Println(attached)
 	}
 
 	const userQuery string = "SELECT id, name, email FROM users WHERE email = $1;"
@@ -83,7 +97,7 @@ func getRawEmail(r *http.Request) (io.Reader, error) {
 	//the raw email from.
 	_, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 	mr := multipart.NewReader(r.Body, params["boundary"])
 	for {
@@ -92,10 +106,34 @@ func getRawEmail(r *http.Request) (io.Reader, error) {
 			return nil, errors.New("No email field found in body.")
 		}
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		if p.FormName() == "email" {
 			return p, nil
 		}
 	}
+}
+
+
+// Outputs raw input to emails directory.
+func saveAndReplaceReader(r io.Reader) (io.Reader, error) {
+	file, err := os.Create(fmt.Sprintf("emails/%v", time.Now().Format(time.Stamp)))
+	defer file.Close()
+	if err != nil {
+		fmt.Println(err)
+		return r, nil
+	}
+
+	raw, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	r = bytes.NewReader(raw)
+	_, err = file.Write(raw)
+	if err != nil {
+		fmt.Println(err)
+		return r, nil
+	}
+	return r, nil
 }
