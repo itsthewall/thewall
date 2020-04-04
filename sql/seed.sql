@@ -1,4 +1,5 @@
 INSERT INTO users (name, email) VALUES ('admin', 'admin@obanana.rocks');
+INSERT INTO users (name, email) VALUES ('Obi', 'symons.obi@gmail.com');
 
 INSERT INTO blocks (title) VALUES ('Test Block');
 

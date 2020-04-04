@@ -15,6 +15,7 @@ import (
 	"time"
 
 	parsemail "github.com/DusanKasan/parsemail"
+	markdown "github.com/gomarkdown/markdown"
 )
 
 func handleMail(w http.ResponseWriter, r *http.Request) {
@@ -74,9 +75,12 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//Convert markdown to HTML
+	html := string(markdown.ToHTML([]byte(email.TextBody), nil, nil))
+	fmt.Println(html)
 	post := Post{
 		Title:   email.Subject,
-		Body:    email.TextBody,
+		Body:    html,
 		UserID:  user.ID,
 		BlockID: blockID,
 	}

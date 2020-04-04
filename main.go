@@ -60,7 +60,8 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 
 	type PostInfo struct {
 		Post
-		ByUser string
+		HTMLBody template.HTML
+		ByUser   string
 	}
 
 	type BlockInfo struct {
@@ -112,7 +113,7 @@ WHERE
 		for posts.Next() {
 			pi := PostInfo{}
 
-			if err = posts.Scan(&pi.ID, &pi.BlockID, &pi.UserID, &pi.Title, &pi.Body, &pi.Time, &pi.ByUser); err != nil {
+			if err = posts.Scan(&pi.ID, &pi.BlockID, &pi.UserID, &pi.Title, &pi.HTMLBody, &pi.Time, &pi.ByUser); err != nil {
 				// TODO(harrison): BAD.
 				fmt.Fprintln(w, err)
 

@@ -25,7 +25,7 @@
             <a href="/post/{{.ID}}" class="post-id" id="post-{{.ID}}">#{{.ID}}</a>
         </div>
 
-        <p>{{ .Body }}</p>
+        <div class="post-body">{{ .HTMLBody }}</div>
     </div>
     <div class="horizontal-small-line"></div>
     {{ end }}
