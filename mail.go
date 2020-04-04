@@ -12,11 +12,14 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	parsemail "github.com/DusanKasan/parsemail"
 	markdown "github.com/gomarkdown/markdown"
 )
+
+const IMAGES_LOCATION string = "static/images/"
 
 func handleMail(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
@@ -47,13 +50,6 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, embedded := range email.EmbeddedFiles {
-		fmt.Println(embedded)
-	}
-	for _, attached := range email.Attachments {
-		fmt.Println(attached)
-	}
-
 	const userQuery string = "SELECT id, name, email FROM users WHERE email = $1;"
 	user := User{}
 
@@ -64,6 +60,10 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		log.Println("Database error: ", err)
 		return
+	}
+
+	for _, attached := range email.Attachments {
+		fmt.Println(attached)
 	}
 
 	const currentBlock string = `SELECT id FROM blocks ORDER BY id DESC 
@@ -77,7 +77,16 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 
 	//Convert markdown to HTML
 	html := string(markdown.ToHTML([]byte(email.TextBody), nil, nil))
+
+	replacer, err := saveEmbedded(&email.EmbeddedFiles)
+	if err != nil {
+		log.Println(err)
+	}
+
+	html = replacer.Replace(html)
+
 	fmt.Println(html)
+
 	post := Post{
 		Title:   email.Subject,
 		Body:    html,
@@ -118,8 +127,38 @@ func getRawEmail(r *http.Request) (io.Reader, error) {
 	}
 }
 
+func saveEmbedded(files *[]parsemail.EmbeddedFile) (*strings.Replacer, error) {
+	var replacementList []string
+	for _, embedded := range *files {
+		mediaType, params, err := mime.ParseMediaType(embedded.ContentType)
+
+		name := params["name"]
+
+		fileName := fmt.Sprint(IMAGES_LOCATION, embedded.CID, '-', name)
+
+		img, err := ioutil.ReadAll(embedded.Data)
+		if err != nil {
+			return nil, err
+		}
+		err = ioutil.WriteFile(fileName, img, os.FileMode(0400))
+		if err != nil {
+			return nil, err
+		}
+
+		const textTag, htmlTag string = "[%v: %v]", "<%v src=\"/%v\">"
+
+		switch strings.Split(mediaType, "/")[0] {
+		case "image":
+			replacementList = append(replacementList,
+				fmt.Sprintf(textTag, "image", name),
+				fmt.Sprintf(htmlTag, "img", fileName))
+		}
+	}
+	return strings.NewReplacer(replacementList...), nil
+}
 
 // Outputs raw input to emails directory.
+// Used to debug parser/save test emails for later.
 func saveAndReplaceReader(r io.Reader) (io.Reader, error) {
 	file, err := os.Create(fmt.Sprintf("emails/%v", time.Now().Format(time.Stamp)))
 	defer file.Close()

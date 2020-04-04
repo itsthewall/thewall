@@ -16,3 +16,7 @@
 thewall
 
 emails/
+
+static/images/
+
+.DS_Store

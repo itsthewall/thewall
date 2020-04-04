@@ -126,3 +126,8 @@ h1, h2, h3, h4 {
 .actionable {
     text-align: center;
 }
+
+
+.post-body img {
+    max-width: 100%;
+}
