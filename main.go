@@ -76,11 +76,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) *Error {
 
 	blocks, err := conn.Query(blocksQuery)
 	if err != nil {
-		return &Error{
-			Err:     err,
-			Message: "database error",
-			Code:    http.StatusInternalServerError,
-		}
+		return ErrorForDatabase(err)
 	}
 
 	data := Data{}
@@ -88,11 +84,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) *Error {
 	for blocks.Next() {
 		bi := BlockInfo{}
 		if err := blocks.Scan(&bi.ID, &bi.Title); err != nil {
-			return &Error{
-				Err:     err,
-				Message: "database error",
-				Code:    http.StatusInternalServerError,
-			}
+			return ErrorForDatabase(err)
 		}
 
 		const postQuery = `
@@ -105,22 +97,14 @@ WHERE
 `
 		posts, err := conn.Query(postQuery, bi.ID)
 		if err != nil {
-			return &Error{
-				Err:     err,
-				Message: "database error",
-				Code:    http.StatusInternalServerError,
-			}
+			return ErrorForDatabase(err)
 		}
 
 		for posts.Next() {
 			pi := PostInfo{}
 
 			if err = posts.Scan(&pi.ID, &pi.BlockID, &pi.UserID, &pi.Title, &pi.HTMLBody, &pi.Time, &pi.ByUser); err != nil {
-				return &Error{
-					Err:     err,
-					Message: "database error",
-					Code:    http.StatusInternalServerError,
-				}
+				return ErrorForDatabase(err)
 			}
 
 			bi.Posts = append(bi.Posts, pi)
@@ -184,11 +168,7 @@ func handlePassword(w http.ResponseWriter, r *http.Request) *Error {
 	query := `INSERT INTO tokens (token) VALUES ($1);`
 	_, err = conn.Exec(query, token)
 	if err != nil {
-		return &Error{
-			Err:     err,
-			Message: "database error",
-			Code:    http.StatusInternalServerError,
-		}
+		return ErrorForDatabase(err)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -226,11 +206,7 @@ func authenticateOr(f ErrorHandler, or string) ErrorHandler {
 
 				break
 			} else if err != nil {
-				return &Error{
-					Err:     err,
-					Message: "error accessing database",
-					Code:    http.StatusInternalServerError,
-				}
+				return ErrorForDatabase(err)
 			}
 
 			f(w, r)
@@ -262,6 +238,14 @@ func (eh ErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("HTTP error:", e.Err)
 
 	http.Error(w, e.Message, e.Code)
+}
+
+func ErrorForDatabase(err error) *Error {
+	return &Error{
+		Err:     err,
+		Message: "database error",
+		Code:    http.StatusInternalServerError,
+	}
 }
 
 func main() {
