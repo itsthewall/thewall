@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"flag"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -55,7 +54,7 @@ var funcMap template.FuncMap = template.FuncMap{
 	"Format": time.Time.Format,
 }
 
-func handleHome(w http.ResponseWriter, r *http.Request) {
+func handleHome(w http.ResponseWriter, r *http.Request) *Error {
 	t := template.Must(template.New("index").Funcs(funcMap).ParseFiles("templates/index.html", "templates/_layout.html"))
 
 	type PostInfo struct {
@@ -77,10 +76,11 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 
 	blocks, err := conn.Query(blocksQuery)
 	if err != nil {
-		// TODO(harrison): don't send DB errors to the user dummy!
-		fmt.Fprintln(w, err)
-
-		return
+		return &Error{
+			Err:     err,
+			Message: "database error",
+			Code:    http.StatusInternalServerError,
+		}
 	}
 
 	data := Data{}
@@ -88,10 +88,11 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	for blocks.Next() {
 		bi := BlockInfo{}
 		if err := blocks.Scan(&bi.ID, &bi.Title); err != nil {
-			// TODO(harrison): don't send DB errors to users!
-			fmt.Fprintln(w, err)
-
-			return
+			return &Error{
+				Err:     err,
+				Message: "database error",
+				Code:    http.StatusInternalServerError,
+			}
 		}
 
 		const postQuery = `
@@ -104,20 +105,22 @@ WHERE
 `
 		posts, err := conn.Query(postQuery, bi.ID)
 		if err != nil {
-			// TODO(harrison): don't send DB errors to the user dummy!
-			fmt.Fprintln(w, err)
-
-			return
+			return &Error{
+				Err:     err,
+				Message: "database error",
+				Code:    http.StatusInternalServerError,
+			}
 		}
 
 		for posts.Next() {
 			pi := PostInfo{}
 
 			if err = posts.Scan(&pi.ID, &pi.BlockID, &pi.UserID, &pi.Title, &pi.HTMLBody, &pi.Time, &pi.ByUser); err != nil {
-				// TODO(harrison): BAD.
-				fmt.Fprintln(w, err)
-
-				return
+				return &Error{
+					Err:     err,
+					Message: "database error",
+					Code:    http.StatusInternalServerError,
+				}
 			}
 
 			bi.Posts = append(bi.Posts, pi)
@@ -128,11 +131,17 @@ WHERE
 
 	err = t.ExecuteTemplate(w, "_layout", data)
 	if err != nil {
-		fmt.Fprintln(w, err)
+		return &Error{
+			Err:     err,
+			Message: "template rendering error",
+			Code:    http.StatusInternalServerError,
+		}
 	}
+
+	return nil
 }
 
-func handlePassword(w http.ResponseWriter, r *http.Request) {
+func handlePassword(w http.ResponseWriter, r *http.Request) *Error {
 	if r.Method == "GET" {
 		type Data struct {
 			DidError bool
@@ -142,10 +151,14 @@ func handlePassword(w http.ResponseWriter, r *http.Request) {
 
 		err := t.ExecuteTemplate(w, "_layout", Data{DidError: r.URL.Query().Get("error") == "true"})
 		if err != nil {
-			fmt.Fprintln(w, err)
+			return &Error{
+				Err:     err,
+				Message: "template rendering error",
+				Code:    http.StatusInternalServerError,
+			}
 		}
 
-		return
+		return nil
 	}
 
 	r.ParseForm()
@@ -153,16 +166,17 @@ func handlePassword(w http.ResponseWriter, r *http.Request) {
 	if r.FormValue("password") != *password {
 		http.Redirect(w, r, "/password?error=true", http.StatusFound)
 
-		return
+		return nil
 	}
 
 	blk := make([]byte, tokenSize)
 	_, err := rand.Read(blk)
 	if err != nil {
-		// TODO(harrison): handle errors properly
-		fmt.Fprintln(w, err)
-
-		return
+		return &Error{
+			Err:     err,
+			Message: "random generation error",
+			Code:    http.StatusInternalServerError,
+		}
 	}
 
 	token := hex.EncodeToString(blk)
@@ -170,10 +184,11 @@ func handlePassword(w http.ResponseWriter, r *http.Request) {
 	query := `INSERT INTO tokens (token) VALUES ($1);`
 	_, err = conn.Exec(query, token)
 	if err != nil {
-		// TODO(harrison): handle errors properly
-		fmt.Fprintln(w, err)
-
-		return
+		return &Error{
+			Err:     err,
+			Message: "database error",
+			Code:    http.StatusInternalServerError,
+		}
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -184,10 +199,12 @@ func handlePassword(w http.ResponseWriter, r *http.Request) {
 	})
 
 	http.Redirect(w, r, "/", http.StatusFound)
+
+	return nil
 }
 
-func authenticateOr(f http.HandlerFunc, or string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func authenticateOr(f ErrorHandler, or string) ErrorHandler {
+	return func(w http.ResponseWriter, r *http.Request) *Error {
 		for _, c := range r.Cookies() {
 			if c.Name != "Auth" {
 				continue
@@ -200,23 +217,51 @@ func authenticateOr(f http.HandlerFunc, or string) http.HandlerFunc {
 			err := row.Scan(&id)
 
 			if err == sql.ErrNoRows {
-				fmt.Fprintln(w, "auth error. sorry!")
+				// TODO(harrison): this should probably just redirect...
+				return &Error{
+					Err:     err,
+					Message: "auth token doesn't exist. log in again.",
+					Code:    http.StatusInternalServerError,
+				}
 
 				break
 			} else if err != nil {
-				// TODO(harrison): handle actual error
-				fmt.Fprintln(w, err)
-
-				return
+				return &Error{
+					Err:     err,
+					Message: "error accessing database",
+					Code:    http.StatusInternalServerError,
+				}
 			}
 
 			f(w, r)
 
-			return
+			return nil
 		}
 
 		http.Redirect(w, r, or, http.StatusFound)
+
+		return nil
 	}
+}
+
+type Error struct {
+	Err     error
+	Message string
+	Code    int
+}
+
+type ErrorHandler func(w http.ResponseWriter, r *http.Request) *Error
+
+func (eh ErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	e := eh(w, r)
+
+	if e == nil {
+		return
+	}
+
+	log.Println("HTTP error:", e.Err)
+
+	http.Error(w, e.Message, e.Code)
 }
 
 func main() {
@@ -240,8 +285,8 @@ func main() {
 	mux := http.NewServeMux()
 
 	// User routes
-	mux.HandleFunc("/", authenticateOr(handleHome, "/password"))
-	mux.HandleFunc("/password", handlePassword)
+	mux.Handle("/", ErrorHandler(authenticateOr(handleHome, "/password")))
+	mux.Handle("/password", ErrorHandler(handlePassword))
 
 	// API routes
 	mux.HandleFunc("/mail", handleMail)
