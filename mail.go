@@ -12,6 +12,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -84,6 +85,11 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html = replacer.Replace(html)
+
+	// Replace #<ID> with a link to an ID
+	// TODO(obi): check this actually works... i can't be fucked to set this up.
+	re := regexp.MustCompile(`#(\d+)`)
+	html = re.ReplaceAllString(html, `<a href="/post?id=$1">#$1</a>`)
 
 	fmt.Println(html)
 

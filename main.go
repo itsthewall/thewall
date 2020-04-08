@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -54,19 +55,19 @@ var funcMap template.FuncMap = template.FuncMap{
 	"Format": time.Time.Format,
 }
 
+type PostInfo struct {
+	Post
+	HTMLBody template.HTML
+	ByUser   string
+}
+
+type BlockInfo struct {
+	Block
+	Posts []PostInfo
+}
+
 func handleHome(w http.ResponseWriter, r *http.Request) *Error {
-	t := template.Must(template.New("index").Funcs(funcMap).ParseFiles("templates/index.html", "templates/_layout.html"))
-
-	type PostInfo struct {
-		Post
-		HTMLBody template.HTML
-		ByUser   string
-	}
-
-	type BlockInfo struct {
-		Block
-		Posts []PostInfo
-	}
+	t := template.Must(template.New("index").Funcs(funcMap).ParseFiles("templates/index.html", "templates/_layout.html", "templates/_post.html"))
 
 	type Data struct {
 		Blocks []BlockInfo
@@ -114,6 +115,54 @@ WHERE
 	}
 
 	err = t.ExecuteTemplate(w, "_layout", data)
+	if err != nil {
+		return &Error{
+			Err:     err,
+			Message: "template rendering error",
+			Code:    http.StatusInternalServerError,
+		}
+	}
+
+	return nil
+}
+
+func handlePost(w http.ResponseWriter, r *http.Request) *Error {
+	r.ParseForm()
+
+	id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+	if err != nil {
+		return &Error{
+			Err:     err,
+			Message: "not a valid id",
+			Code:    http.StatusInternalServerError,
+		}
+	}
+
+	const postQuery = `
+SELECT
+	posts.id, posts.block_id, posts.user_id, posts.title, posts.body, posts.created_at, users.name
+FROM
+	posts, users
+WHERE
+	posts.user_id = users.id AND posts.id = $1
+`
+	row := conn.QueryRow(postQuery, id)
+	if err != nil {
+		return ErrorForDatabase(err)
+	}
+
+	pi := PostInfo{}
+
+	if err = row.Scan(&pi.ID, &pi.BlockID, &pi.UserID, &pi.Title, &pi.HTMLBody, &pi.Time, &pi.ByUser); err != nil {
+		return ErrorForDatabase(err)
+	}
+
+	type Data struct {
+		Post PostInfo
+	}
+
+	t := template.Must(template.New("post").Funcs(funcMap).ParseFiles("templates/post.html", "templates/_layout.html", "templates/_post.html"))
+	err = t.ExecuteTemplate(w, "_layout", Data{Post: pi})
 	if err != nil {
 		return &Error{
 			Err:     err,
@@ -270,6 +319,7 @@ func main() {
 
 	// User routes
 	mux.Handle("/", ErrorHandler(authenticateOr(handleHome, "/password")))
+	mux.Handle("/post", ErrorHandler(authenticateOr(handlePost, "/password")))
 	mux.Handle("/password", ErrorHandler(handlePassword))
 
 	// API routes

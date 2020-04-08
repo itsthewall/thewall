@@ -7,6 +7,7 @@
     <a href="how">How do I post?</a>
     <div class="next-block">Queued for next block: #</div>
 </div>
+
 {{ range .Blocks }}
 <div class="block">
     <div class="block-header">
@@ -17,17 +18,7 @@
     <div class="horizontal-bar"></div>
 
     {{ range .Posts }}
-    <div class="post">
-        <div class="post-header">
-            <h2>{{ .Title }}</h2>
-            <span class="whitespace"></span>
-            <h3>{{ .ByUser }} - {{ Format .Time "3:04 pm"}}</h3>
-            <a href="/post/{{.ID}}" class="post-id" id="post-{{.ID}}">#{{.ID}}</a>
-        </div>
-
-        <div class="post-body">{{ .HTMLBody }}</div>
-    </div>
-    <div class="horizontal-small-line"></div>
+        {{ template "_post" . }}
     {{ end }}
 </div>
 {{ end }}
