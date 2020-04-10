@@ -134,6 +134,8 @@ WHERE
 			bi.Posts = append(bi.Posts, pi)
 		}
 
+		bi.Time = bi.Time.Local()
+
 		data.Blocks = append(data.Blocks, bi)
 	}
 
