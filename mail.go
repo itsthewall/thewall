@@ -67,13 +67,28 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(attached)
 	}
 
-	const currentBlock string = `SELECT id FROM blocks ORDER BY id DESC 
-		FETCH FIRST ROW ONLY;`
-	row = conn.QueryRow(currentBlock)
+	const lastBlock string = `SELECT id, created_at FROM blocks ORDER BY created_at DESC FETCH FIRST ROW ONLY;`
+
+
+	row = conn.QueryRow(lastBlock)
 	var blockID int64
-	if err := row.Scan(&blockID); err != nil {
+	var blockCreatedAt time.Time
+	if err := row.Scan(&blockID, &blockCreatedAt); err != nil {
 		log.Println("Database error: ", err)
 		return
+	}
+
+	if blockCreatedAt.Before(time.Now().Add(-schedule.Frequency)) {
+		delta := time.Now().Sub(blockCreatedAt)
+		count := delta / schedule.Frequency
+		const newBlock = `INSERT INTO blocks (title, created_at) VALUES ($1, $2) RETURNING id`
+		idRow := conn.QueryRow(newBlock, "TODO(obi)", blockCreatedAt.Add(schedule.Frequency * count))
+
+		err = idRow.Scan(&blockID)
+		if err != nil {
+			log.Println("Database error: ", err)
+			return
+		}
 	}
 
 	//Convert markdown to HTML
@@ -90,8 +105,6 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 	// TODO(obi): check this actually works... i can't be fucked to set this up.
 	re := regexp.MustCompile(`#(\d+)`)
 	html = re.ReplaceAllString(html, `<a href="/post?id=$1">#$1</a>`)
-
-	fmt.Println(html)
 
 	post := Post{
 		Title:   email.Subject,

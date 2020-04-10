@@ -23,7 +23,8 @@ var (
 )
 
 var (
-	conn *sql.DB
+	conn     *sql.DB
+	schedule *BlockSchedule
 )
 
 type User struct {
@@ -37,6 +38,11 @@ type Block struct {
 	Title string
 
 	Time time.Time
+}
+
+type BlockSchedule struct {
+	Frequency     time.Duration
+	ReleaseOffset time.Duration
 }
 
 type Post struct {
@@ -73,9 +79,15 @@ func handleHome(w http.ResponseWriter, r *http.Request) *Error {
 		Blocks []BlockInfo
 	}
 
-	const blocksQuery = `SELECT id, title FROM blocks ORDER BY id DESC;`
+	const blocksQuery = `
+		SELECT id, title FROM blocks 
+		WHERE created_at <= $1
+		ORDER BY id DESC;
+	`
 
-	blocks, err := conn.Query(blocksQuery)
+	release_time := time.Now().Add(-(schedule.Frequency + schedule.ReleaseOffset))
+
+	blocks, err := conn.Query(blocksQuery, release_time)
 	if err != nil {
 		return ErrorForDatabase(err)
 	}
@@ -87,7 +99,6 @@ func handleHome(w http.ResponseWriter, r *http.Request) *Error {
 		if err := blocks.Scan(&bi.ID, &bi.Title); err != nil {
 			return ErrorForDatabase(err)
 		}
-
 		const postQuery = `
 SELECT
 	posts.id, posts.block_id, posts.user_id, posts.title, posts.body, posts.created_at, users.name
@@ -252,8 +263,6 @@ func authenticateOr(f ErrorHandler, or string) ErrorHandler {
 					Message: "auth token doesn't exist. log in again.",
 					Code:    http.StatusInternalServerError,
 				}
-
-				break
 			} else if err != nil {
 				return ErrorForDatabase(err)
 			}
@@ -313,6 +322,11 @@ func main() {
 
 	if err := migrate(conn); err != nil {
 		log.Fatal(err)
+	}
+
+	schedule = &BlockSchedule{
+		Frequency:     time.Hour * 24,
+		ReleaseOffset: time.Hour * 8,
 	}
 
 	mux := http.NewServeMux()

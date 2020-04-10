@@ -54,6 +54,15 @@ CREATE TABLE tokens (
 );
 		`,
 	},
+	{
+		name: "convert to timestamptz",
+		up: `
+		ALTER TABLE blocks ALTER created_at TYPE timestamptz USING created_at AT TIME ZONE 'AEST';
+		ALTER TABLE posts ALTER created_at TYPE timestamptz USING created_at AT TIME ZONE 'AEST';
+		ALTER TABLE users ALTER created_at TYPE timestamptz USING created_at AT TIME ZONE 'AEST';
+		ALTER TABLE migrations ALTER created_at TYPE timestamptz USING created_at AT TIME ZONE 'AEST';
+		`,
+	},
 }
 
 func migrate(db *sql.DB) error {
