@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -17,9 +18,10 @@ import (
 const tokenSize = 64
 
 var (
-	addr     = flag.String("addr", "localhost:8080", "address to host the server on")
-	dbURI    = flag.String("db", "", "uri to access postgres database")
-	password = flag.String("password", "", "password for access to the server")
+	addr             = flag.String("addr", "localhost:8080", "address to host the server on")
+	dbURI            = flag.String("db", "", "uri to access postgres database")
+	password         = flag.String("password", "", "password for access to the server")
+	shutdownFilePath = flag.String("shutdown", "", "file which kills the serve when it exists")
 )
 
 var (
@@ -412,8 +414,32 @@ func main() {
 	}
 
 	log.Println("Starting server on", server.Addr)
+
+	go checkShutdownFile()
+
 	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func checkShutdownFile() {
+	for {
+		_, err := os.Stat(*shutdownFilePath)
+		if err == nil {
+			log.Println("Shutdown file exists!")
+
+			if err := os.Remove(*shutdownFilePath); err != nil {
+				log.Fatal("Can't remove shutdown file!")
+
+				return
+			}
+
+			log.Fatal("Shutting down...")
+
+			return
+		}
+
+		time.Sleep(5 * time.Second)
 	}
 }

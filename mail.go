@@ -69,7 +69,6 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 
 	const lastBlock string = `SELECT id, created_at FROM blocks ORDER BY created_at DESC FETCH FIRST ROW ONLY;`
 
-
 	row = conn.QueryRow(lastBlock)
 	var blockID int64
 	var blockCreatedAt time.Time
@@ -82,7 +81,7 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 		delta := time.Now().Sub(blockCreatedAt)
 		count := delta / schedule.Frequency
 		const newBlock = `INSERT INTO blocks (title, created_at) VALUES ($1, $2) RETURNING id`
-		idRow := conn.QueryRow(newBlock, "TODO(obi)", blockCreatedAt.Add(schedule.Frequency * count))
+		idRow := conn.QueryRow(newBlock, "TODO(obi)", blockCreatedAt.Add(schedule.Frequency*count))
 
 		err = idRow.Scan(&blockID)
 		if err != nil {
