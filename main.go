@@ -118,6 +118,7 @@ FROM
 	posts, users
 WHERE
 	posts.user_id = users.id AND block_id = $1
+ORDER BY posts.id DESC;
 `
 		posts, err := conn.Query(postQuery, bi.ID)
 		if err != nil {
