@@ -76,7 +76,8 @@ func handleHome(w http.ResponseWriter, r *http.Request) *Error {
 	t := template.Must(template.New("index").Funcs(funcMap).ParseFiles("templates/index.html", "templates/_layout.html", "templates/_post.html"))
 
 	type Data struct {
-		Blocks []BlockInfo
+		Blocks         []BlockInfo
+		PostsNextBlock int
 	}
 
 	const blocksQuery = `
@@ -123,6 +124,23 @@ WHERE
 		}
 
 		data.Blocks = append(data.Blocks, bi)
+	}
+
+	const getQueued = `
+SELECT 
+	COUNT(posts)
+FROM 
+	posts, blocks
+WHERE
+	blocks.created_at > $1 AND posts.block_id = blocks.id
+`
+	res := conn.QueryRow(getQueued, release_time)
+	if err := res.Scan(&data.PostsNextBlock); err != nil {
+		return &Error{
+			Err:     err,
+			Message: "Error getting posts in next block.",
+			Code:    http.StatusInternalServerError,
+		}
 	}
 
 	err = t.ExecuteTemplate(w, "_layout", data)
