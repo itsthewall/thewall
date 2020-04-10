@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -17,9 +18,10 @@ import (
 const tokenSize = 64
 
 var (
-	addr     = flag.String("addr", "localhost:8080", "address to host the server on")
-	dbURI    = flag.String("db", "", "uri to access postgres database")
-	password = flag.String("password", "", "password for access to the server")
+	addr             = flag.String("addr", "localhost:8080", "address to host the server on")
+	dbURI            = flag.String("db", "", "uri to access postgres database")
+	password         = flag.String("password", "", "password for access to the server")
+	shutdownFilePath = flag.String("shutdown", "", "file which kills the serve when it exists")
 )
 
 var (
