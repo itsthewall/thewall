@@ -5,7 +5,7 @@
     <a href="what">What is this?</a>
     <span class="whitespace"></span>
     <a href="how">How do I post?</a>
-    <div class="next-block">Queued for next block: #</div>
+    <div class="next-block">Queued for next block: {{ .PostsNextBlock }}</div>
 </div>
 
 {{ range .Blocks }}

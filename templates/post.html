@@ -1,7 +1,9 @@
 {{ define "content" }}
 
 {{ with .Post }}
+<div class="post-only">
     {{ template "_post" . }}
+</div>
 {{ end }}
 
 {{ end }}
