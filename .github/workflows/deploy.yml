@@ -36,4 +36,4 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
-        script: "touch /home/${{secrets.SSH_USER}}/shutdown"
+        script: "systemctl restart thewall.service"
