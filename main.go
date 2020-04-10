@@ -81,7 +81,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) *Error {
 	}
 
 	const blocksQuery = `
-		SELECT id, title FROM blocks 
+		SELECT id, title, created_at FROM blocks 
 		WHERE created_at <= $1
 		ORDER BY id DESC;
 	`
@@ -97,7 +97,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) *Error {
 
 	for blocks.Next() {
 		bi := BlockInfo{}
-		if err := blocks.Scan(&bi.ID, &bi.Title); err != nil {
+		if err := blocks.Scan(&bi.ID, &bi.Title, &bi.Time); err != nil {
 			return ErrorForDatabase(err)
 		}
 		const postQuery = `
