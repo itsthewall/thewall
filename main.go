@@ -72,12 +72,20 @@ type BlockInfo struct {
 	Posts []PostInfo
 }
 
-func handleHome(w http.ResponseWriter, r *http.Request) *Error {
+type AppData struct {
+	ShowTabs       bool
+	PostsNextBlock int
+	ReleaseTime    time.Time
+}
+
+type AppHandler func(w http.ResponseWriter, r *http.Request, data AppData) *Error
+
+func handleHome(w http.ResponseWriter, r *http.Request, ad AppData) *Error {
 	t := template.Must(template.New("index").Funcs(funcMap).ParseFiles("templates/index.html", "templates/_layout.html", "templates/_post.html"))
 
 	type Data struct {
-		Blocks         []BlockInfo
-		PostsNextBlock int
+		AppData
+		Blocks []BlockInfo
 	}
 
 	const blocksQuery = `
@@ -86,14 +94,14 @@ func handleHome(w http.ResponseWriter, r *http.Request) *Error {
 		ORDER BY id DESC;
 	`
 
-	release_time := time.Now().Add(-(schedule.Frequency + schedule.ReleaseOffset))
-
-	blocks, err := conn.Query(blocksQuery, release_time)
+	blocks, err := conn.Query(blocksQuery, ad.ReleaseTime)
 	if err != nil {
 		return ErrorForDatabase(err)
 	}
 
-	data := Data{}
+	data := Data{
+		AppData: ad,
+	}
 
 	for blocks.Next() {
 		bi := BlockInfo{}
@@ -126,23 +134,6 @@ WHERE
 		data.Blocks = append(data.Blocks, bi)
 	}
 
-	const getQueued = `
-SELECT 
-	COUNT(posts)
-FROM 
-	posts, blocks
-WHERE
-	blocks.created_at > $1 AND posts.block_id = blocks.id
-`
-	res := conn.QueryRow(getQueued, release_time)
-	if err := res.Scan(&data.PostsNextBlock); err != nil {
-		return &Error{
-			Err:     err,
-			Message: "Error getting posts in next block.",
-			Code:    http.StatusInternalServerError,
-		}
-	}
-
 	err = t.ExecuteTemplate(w, "_layout", data)
 	if err != nil {
 		return &Error{
@@ -155,7 +146,7 @@ WHERE
 	return nil
 }
 
-func handlePost(w http.ResponseWriter, r *http.Request) *Error {
+func handlePost(w http.ResponseWriter, r *http.Request, ad AppData) *Error {
 	r.ParseForm()
 
 	id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
@@ -193,11 +184,13 @@ WHERE
 	}
 
 	type Data struct {
+		AppData
+
 		Post PostInfo
 	}
 
 	t := template.Must(template.New("post").Funcs(funcMap).ParseFiles("templates/post.html", "templates/_layout.html", "templates/_post.html"))
-	err = t.ExecuteTemplate(w, "_layout", Data{Post: pi})
+	err = t.ExecuteTemplate(w, "_layout", Data{AppData: ad, Post: pi})
 	if err != nil {
 		return &Error{
 			Err:     err,
@@ -215,7 +208,7 @@ func handlePassword(w http.ResponseWriter, r *http.Request) *Error {
 			DidError bool
 		}
 
-		t := template.Must(template.ParseFiles("templates/password.html", "templates/_layout.html"))
+		t := template.Must(template.ParseFiles("templates/password.html", "templates/password.html"))
 
 		err := t.ExecuteTemplate(w, "_layout", Data{DidError: r.URL.Query().Get("error") == "true"})
 		if err != nil {
@@ -267,7 +260,7 @@ func handlePassword(w http.ResponseWriter, r *http.Request) *Error {
 	return nil
 }
 
-func authenticateOr(f ErrorHandler, or string) ErrorHandler {
+func authenticateOr(f AppHandler, or string) ErrorHandler {
 	return func(w http.ResponseWriter, r *http.Request) *Error {
 		for _, c := range r.Cookies() {
 			if c.Name != "Auth" {
@@ -291,7 +284,29 @@ func authenticateOr(f ErrorHandler, or string) ErrorHandler {
 				return ErrorForDatabase(err)
 			}
 
-			return f(w, r)
+			ad := AppData{
+				ShowTabs:    true,
+				ReleaseTime: time.Now().Add(-(schedule.Frequency + schedule.ReleaseOffset)),
+			}
+
+			const getQueued = `
+SELECT
+	COUNT(posts)
+FROM
+	posts, blocks
+WHERE
+	blocks.created_at > $1 AND posts.block_id = blocks.id
+`
+			res := conn.QueryRow(getQueued, ad.ReleaseTime)
+			if err := res.Scan(&ad.PostsNextBlock); err != nil {
+				return &Error{
+					Err:     err,
+					Message: "Error getting posts in next block.",
+					Code:    http.StatusInternalServerError,
+				}
+			}
+
+			return f(w, r, ad)
 		}
 
 		http.Redirect(w, r, or, http.StatusFound)

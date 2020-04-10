@@ -1,13 +1,5 @@
 {{ define "content" }}
 
-<div class="header">
-    <h1>The Wall</h1>
-    <a href="what">What is this?</a>
-    <span class="whitespace"></span>
-    <a href="how">How do I post?</a>
-    <div class="next-block">Queued for next block: {{ .PostsNextBlock }}</div>
-</div>
-
 {{ range .Blocks }}
 <div class="block">
     <div class="block-header">

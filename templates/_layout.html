@@ -11,6 +11,17 @@
 
 <body>
     <div class="document">
+
+        <div class="header">
+            <h1>The Wall</h1>
+            <a href="what">What is this?</a>
+            <span class="whitespace"></span>
+            <a href="how">How do I post?</a>
+            {{ if .ShowTabs }}
+                <div class="next-block">Queued for next block: {{ .PostsNextBlock }}</div>
+            {{ end }}
+        </div>
+
         {{ template "content" . }}
         <div class="footer">
             A wall that brings those you <span onclick="darkmode()">love</span> together instead of keeping them a part. <br>
