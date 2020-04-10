@@ -189,6 +189,8 @@ WHERE
 		return ErrorForDatabase(err)
 	}
 
+	pi.Time = pi.Time.Local()
+
 	type Data struct {
 		AppData
 
