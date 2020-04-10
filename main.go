@@ -164,7 +164,13 @@ WHERE
 
 	pi := PostInfo{}
 
-	if err = row.Scan(&pi.ID, &pi.BlockID, &pi.UserID, &pi.Title, &pi.HTMLBody, &pi.Time, &pi.ByUser); err != nil {
+	if err = row.Scan(&pi.ID, &pi.BlockID, &pi.UserID, &pi.Title, &pi.HTMLBody, &pi.Time, &pi.ByUser); err == sql.ErrNoRows {
+		return &Error{
+			Err:     err,
+			Message: "post does not exist",
+			Code:    http.StatusNotFound,
+		}
+	} else if err != nil {
 		return ErrorForDatabase(err)
 	}
 
