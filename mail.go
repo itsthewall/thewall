@@ -23,7 +23,7 @@ import (
 const IMAGES_LOCATION string = "static/images/"
 
 func handleMail(w http.ResponseWriter, r *http.Request) {
-	log.Println("Mail request: ", r.Method, r.Host)
+	log.Println("Mail request: ", r.Method, r.RemoteAddr)
 	if r.Method != "POST" {
 		w.WriteHeader(405)
 		io.WriteString(w, "Must use POST.")

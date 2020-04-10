@@ -28,6 +28,7 @@ var (
 var (
 	conn     *sql.DB
 	schedule *BlockSchedule
+	timezone *time.Location
 )
 
 type User struct {
@@ -135,7 +136,7 @@ ORDER BY posts.id DESC;
 			bi.Posts = append(bi.Posts, pi)
 		}
 
-		bi.Time = bi.Time.Local()
+		bi.Time = bi.Time.In(timezone)
 
 		data.Blocks = append(data.Blocks, bi)
 	}
@@ -189,7 +190,7 @@ WHERE
 		return ErrorForDatabase(err)
 	}
 
-	pi.Time = pi.Time.Local()
+	pi.Time = pi.Time.In(timezone)
 
 	type Data struct {
 		AppData
@@ -397,6 +398,11 @@ func main() {
 	}
 
 	if err := migrate(conn); err != nil {
+		log.Fatal(err)
+	}
+
+	timezone, err = time.LoadLocation("Australia/Canberra")
+	if err != nil {
 		log.Fatal(err)
 	}
 
