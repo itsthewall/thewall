@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"html/template"
 	"log"
@@ -269,7 +270,21 @@ func handlePage(w http.ResponseWriter, r *http.Request, ad AppData) *Error {
 		AppData
 	}
 
-	t := template.Must(template.New("page").Funcs(funcMap).ParseFiles("templates/what.html", "templates/_layout.html"))
+	templ := ""
+
+	if r.URL.Path == "/what" {
+		templ = "templates/what.html"
+	} else if r.URL.Path == "/how" {
+		templ = "templates/how.html"
+	} else {
+		return &Error{
+			Err:     errors.New("invalid path for page"),
+			Message: "can't find that page",
+			Code:    http.StatusNotFound,
+		}
+	}
+
+	t := template.Must(template.New("page").Funcs(funcMap).ParseFiles(templ, "templates/_layout.html"))
 	err := t.ExecuteTemplate(w, "_layout", Data{AppData: ad})
 	if err != nil {
 		return &Error{
@@ -395,6 +410,7 @@ func main() {
 	mux.Handle("/post", ErrorHandler(authenticateOr(handlePost, "/password")))
 
 	mux.Handle("/what", ErrorHandler(authenticateOr(handlePage, "/password")))
+	mux.Handle("/how", ErrorHandler(authenticateOr(handlePage, "/password")))
 
 	mux.Handle("/password", ErrorHandler(handlePassword))
 

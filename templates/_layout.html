@@ -14,9 +14,12 @@
 
         <div class="header">
             <h1>The Wall</h1>
-            <a href="what">What is this?</a>
+
+            <a href="/">Home</a>
             <span class="whitespace"></span>
-            <a href="how">How do I post?</a>
+            <a href="/what">What is this?</a>
+            <span class="whitespace"></span>
+            <a href="/how">How do I post?</a>
             {{ if .ShowTabs }}
                 <div class="next-block">Queued for next block: {{ .PostsNextBlock }}</div>
             {{ end }}
