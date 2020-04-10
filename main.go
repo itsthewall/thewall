@@ -267,9 +267,7 @@ func authenticateOr(f ErrorHandler, or string) ErrorHandler {
 				return ErrorForDatabase(err)
 			}
 
-			f(w, r)
-
-			return nil
+			return f(w, r)
 		}
 
 		http.Redirect(w, r, or, http.StatusFound)
