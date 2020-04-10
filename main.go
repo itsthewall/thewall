@@ -190,7 +190,7 @@ WHERE
 	}
 
 	t := template.Must(template.New("post").Funcs(funcMap).ParseFiles("templates/post.html", "templates/_layout.html", "templates/_post.html"))
-	err = t.ExecuteTemplate(w, "_layout", Data{AppData: ad, Post: pi})
+	err = t.ExecuteTemplate(w, "content", Data{AppData: ad, Post: pi})
 	if err != nil {
 		return &Error{
 			Err:     err,
@@ -205,10 +205,12 @@ WHERE
 func handlePassword(w http.ResponseWriter, r *http.Request) *Error {
 	if r.Method == "GET" {
 		type Data struct {
+			AppData
+
 			DidError bool
 		}
 
-		t := template.Must(template.ParseFiles("templates/password.html", "templates/password.html"))
+		t := template.Must(template.ParseFiles("templates/password.html", "templates/_layout.html"))
 
 		err := t.ExecuteTemplate(w, "_layout", Data{DidError: r.URL.Query().Get("error") == "true"})
 		if err != nil {
@@ -256,6 +258,24 @@ func handlePassword(w http.ResponseWriter, r *http.Request) *Error {
 	})
 
 	http.Redirect(w, r, "/", http.StatusFound)
+
+	return nil
+}
+
+func handlePage(w http.ResponseWriter, r *http.Request, ad AppData) *Error {
+	type Data struct {
+		AppData
+	}
+
+	t := template.Must(template.New("page").Funcs(funcMap).ParseFiles("templates/what.html", "templates/_layout.html"))
+	err := t.ExecuteTemplate(w, "_layout", Data{AppData: ad})
+	if err != nil {
+		return &Error{
+			Err:     err,
+			Message: "template rendering error",
+			Code:    http.StatusInternalServerError,
+		}
+	}
 
 	return nil
 }
@@ -371,6 +391,9 @@ func main() {
 	// User routes
 	mux.Handle("/", ErrorHandler(authenticateOr(handleHome, "/password")))
 	mux.Handle("/post", ErrorHandler(authenticateOr(handlePost, "/password")))
+
+	mux.Handle("/what", ErrorHandler(authenticateOr(handlePage, "/password")))
+
 	mux.Handle("/password", ErrorHandler(handlePassword))
 
 	// API routes

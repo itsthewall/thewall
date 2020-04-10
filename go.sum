@@ -1,3 +1,5 @@
+github.com/DusanKasan/parsemail v1.0.1 h1:mQoh40At3H9uQU1vSgH6W2zH7n3cj1AXBX9gDb9a45A=
+github.com/DusanKasan/parsemail v1.0.1/go.mod h1:zd9d2oogN9BpEVaJd6d+iaEiZylyquz3CfekNUEAKnA=
 github.com/gomarkdown/markdown v0.0.0-20200316172748-fd1f3374857d h1:cFE/VFoUSjvIjrkI3YHGUYReJTIPN4fl2etwblBZfgg=
 github.com/gomarkdown/markdown v0.0.0-20200316172748-fd1f3374857d/go.mod h1:aii0r/K0ZnHv7G0KF7xy1v0A7s2Ljrb5byB7MO5p6TU=
 github.com/itsthewall/parsemail v1.0.3 h1:QrYj9HJLltFs7E84c7oeFK+RcbpCHbjoZdBlC4JL+gI=
