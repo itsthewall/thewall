@@ -412,8 +412,32 @@ func main() {
 	}
 
 	log.Println("Starting server on", server.Addr)
+
+	go checkShutdownFile()
+
 	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func checkShutdownFile() {
+	for {
+		_, err := os.Stat(*shutdownFilePath)
+		if err == nil {
+			log.Println("Shutdown file exists!")
+
+			if err := os.Remove(*shutdownFilePath); err != nil {
+				log.Fatal("Can't remove shutdown file!")
+
+				return
+			}
+
+			log.Fatal("Shutting down...")
+
+			return
+		}
+
+		time.Sleep(5 * time.Second)
 	}
 }
