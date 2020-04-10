@@ -313,12 +313,9 @@ func authenticateOr(f AppHandler, or string) ErrorHandler {
 			err := row.Scan(&id)
 
 			if err == sql.ErrNoRows {
-				// TODO(harrison): this should probably just redirect...
-				return &Error{
-					Err:     err,
-					Message: "auth token doesn't exist. log in again.",
-					Code:    http.StatusInternalServerError,
-				}
+				http.Redirect(w, r, "/password?error=true", http.StatusFound)
+
+				return nil
 			} else if err != nil {
 				return ErrorForDatabase(err)
 			}
