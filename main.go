@@ -195,7 +195,7 @@ WHERE
 	}
 
 	t := template.Must(template.New("post").Funcs(funcMap).ParseFiles("templates/post.html", "templates/_layout.html", "templates/_post.html"))
-	err = t.ExecuteTemplate(w, "content", Data{AppData: ad, Post: pi})
+	err = t.ExecuteTemplate(w, "_layout", Data{AppData: ad, Post: pi})
 	if err != nil {
 		return &Error{
 			Err:     err,
