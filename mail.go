@@ -97,7 +97,8 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 	body := email.TextBody
 
 	newlineKiller := strings.NewReplacer(
-		"\r", "\n",
+		"\r\r", "\n",
+		"\r", "",
 	)
 
 	body = newlineKiller.Replace(body)
