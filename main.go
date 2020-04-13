@@ -424,7 +424,9 @@ func main() {
 
 	// Serve static files
 	staticHandler := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
+	imagesHandler := http.StripPrefix("/static/images/", http.FileServer(http.Dir("images")))
 	mux.Handle("/static/", staticHandler)
+	mux.Handle("/static/images/", imagesHandler)
 
 	server := &http.Server{
 		ReadTimeout:  5 * time.Second,

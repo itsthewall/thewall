@@ -20,7 +20,7 @@ import (
 	markdown "github.com/gomarkdown/markdown"
 )
 
-const IMAGES_LOCATION string = "static/images/"
+const ImagesLocation string = "images/"
 
 func handleMail(w http.ResponseWriter, r *http.Request) {
 	log.Println("Mail request: ", r.Method, r.RemoteAddr)
@@ -160,7 +160,7 @@ func saveEmbedded(files *[]parsemail.EmbeddedFile) (*strings.Replacer, error) {
 
 		name := params["name"]
 
-		fileName := fmt.Sprint(IMAGES_LOCATION, embedded.CID, '-', name)
+		fileName := fmt.Sprint(ImagesLocation, embedded.CID, '-', name)
 
 		img, err := ioutil.ReadAll(embedded.Data)
 		if err != nil {
