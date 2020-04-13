@@ -131,3 +131,9 @@ h1, h2, h3, h4 {
 .post-body img {
     max-width: 100%;
 }
+
+blockquote {
+    padding: 0 1em;
+    color: #6a737d;
+    border-left: .25em solid #dfe2e5;
+}
