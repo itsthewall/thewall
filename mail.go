@@ -92,8 +92,13 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//Convert markdown to HTML
-	html := string(markdown.ToHTML([]byte(email.TextBody), nil, nil))
+	body := email.TextBody
+
+	re := regexp.MustCompile(`\r`)
+	body = re.ReplaceAllString(body, `\n`)
+
+	// Convert markdown to HTML
+	html := string(markdown.ToHTML([]byte(body), nil, nil))
 
 	replacer, err := saveEmbedded(&email.EmbeddedFiles)
 	if err != nil {
@@ -102,11 +107,8 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 
 	html = replacer.Replace(html)
 
-	re := regexp.MustCompile(`#(\d+)`)
+	re = regexp.MustCompile(`#(\d+)`)
 	html = re.ReplaceAllString(html, `<a href="/post?id=$1">#$1</a>`)
-
-	re = regexp.MustCompile(`\r`)
-	html = re.ReplaceAllString(html, `\n`)
 
 	post := Post{
 		Title:   email.Subject,
