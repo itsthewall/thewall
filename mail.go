@@ -17,7 +17,7 @@ import (
 	"time"
 
 	parsemail "github.com/DusanKasan/parsemail"
-	"github.com/russross/blackfriday"
+	markdown "github.com/gomarkdown/markdown"
 )
 
 const IMAGES_LOCATION string = "static/images/"
@@ -29,6 +29,7 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Must use POST.")
 		return
 	}
+
 	//Always respond with a 200 status code to prevent send grid from
 	//resending emails.
 	defer io.WriteString(w, "Received.")
@@ -92,9 +93,7 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Convert markdown to HTML
-	// html := string(markdown.ToHTML([]byte(email.TextBody), nil, nil))
-
-	html := string(blackfriday.Run([]byte(email.TextBody)))
+	html := string(markdown.ToHTML([]byte(email.TextBody), nil, nil))
 
 	replacer, err := saveEmbedded(&email.EmbeddedFiles)
 	if err != nil {
@@ -103,10 +102,11 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 
 	html = replacer.Replace(html)
 
-	// Replace #<ID> with a link to an ID
-	// TODO(obi): check this actually works... i can't be fucked to set this up.
 	re := regexp.MustCompile(`#(\d+)`)
 	html = re.ReplaceAllString(html, `<a href="/post?id=$1">#$1</a>`)
+
+	re = regexp.MustCompile(`\r`)
+	html = re.ReplaceAllString(html, `\n`)
 
 	post := Post{
 		Title:   email.Subject,
