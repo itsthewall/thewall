@@ -17,7 +17,7 @@ import (
 	"time"
 
 	parsemail "github.com/DusanKasan/parsemail"
-	"github.com/russross/blackfriday"
+	markdown "github.com/gomarkdown/markdown"
 )
 
 const IMAGES_LOCATION string = "static/images/"
@@ -92,9 +92,7 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Convert markdown to HTML
-	// html := string(markdown.ToHTML([]byte(email.TextBody), nil, nil))
-
-	html := string(blackfriday.Run([]byte(email.TextBody)))
+	html := string(markdown.ToHTML([]byte(email.TextBody), nil, nil))
 
 	replacer, err := saveEmbedded(&email.EmbeddedFiles)
 	if err != nil {
