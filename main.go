@@ -62,7 +62,8 @@ type Post struct {
 }
 
 var funcMap template.FuncMap = template.FuncMap{
-	"Format": time.Time.Format,
+	"Format":    time.Time.Format,
+	"LocalTime": time.Time.Local,
 }
 
 type PostInfo struct {
@@ -136,8 +137,6 @@ ORDER BY posts.id DESC;
 			bi.Posts = append(bi.Posts, pi)
 		}
 
-		bi.Time = bi.Time.In(timezone)
-
 		data.Blocks = append(data.Blocks, bi)
 	}
 
@@ -189,8 +188,6 @@ WHERE
 	} else if err != nil {
 		return ErrorForDatabase(err)
 	}
-
-	pi.Time = pi.Time.In(timezone)
 
 	type Data struct {
 		AppData
