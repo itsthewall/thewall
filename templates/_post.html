@@ -4,7 +4,7 @@
     <div class="post-header">
         <h2>{{ .Title }}</h2>
         <span class="whitespace"></span>
-        <h3>{{ .ByUser }} - {{ LocalTime .Time }}</h3>
+        <h3>{{ .ByUser }} - {{ Format (LocalTime .Time) "3:04 pm"}}</h3>
         <a href="/post?id={{.ID}}" class="post-id" id="post-{{.ID}}">#{{.ID}}</a>
     </div>
 

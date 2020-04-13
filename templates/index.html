@@ -4,7 +4,7 @@
 <div class="block">
     <div class="block-header">
         <h2>Block: {{ .ID }}</h2>
-        <h3>{{ LocalTime .Time }}</h3>
+        <h3>{{ Format (LocalTime .Time) "Mon Jan 2 2006" }}</h3>
     </div>
 
     <div class="horizontal-bar"></div>
