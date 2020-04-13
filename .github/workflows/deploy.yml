@@ -25,7 +25,7 @@ jobs:
       env:
         DEPLOY_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         ARGS: "-e -c -r --delete"
-        SERVER_PORT: 22
+        SERVER_PORT: ${{ secrets.SSH_PORT }}
         FOLDER: "thewall static templates"
         SERVER_IP: ${{ secrets.SSH_HOST }}
         USERNAME: ${{ secrets.SSH_USER }}
@@ -37,5 +37,5 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: 22
+        port: ${{ secrets.SSH_PORT }}
         script: "sudo systemctl restart thewall.service"
