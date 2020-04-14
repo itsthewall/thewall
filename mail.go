@@ -49,8 +49,10 @@ func handleMail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println(email.ContentType)
-	log.Println(email.Content)
+	log.Println("CONTENT TYPE", email.ContentType)
+	log.Println("RAW CONTENT", email.Content)
+	log.Println("TEXT BODY", email.TextBody)
+	log.Println("HTML BODY", email.HTMLBody)
 
 	if len(email.From) == 0 {
 		return
