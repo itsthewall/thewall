@@ -141,7 +141,13 @@ func getRawEmail(r *http.Request) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	mr := multipart.NewReader(r.Body, params["boundary"])
+
+	reader, err := saveAndReplaceReader(r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	mr := multipart.NewReader(reader, params["boundary"])
 	for {
 		p, err := mr.NextPart()
 		if err == io.EOF {
