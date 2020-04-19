@@ -4,16 +4,6 @@ html {
     font-family: 'Tinos', 'Times New Roman', Times, serif;
     background-color: white;
 }
-
-a {
-    text-decoration-line: none;
-    color: black;
-}
-
-a:hover {
-    text-decoration-line: underline;
-}
-
 .document {
     width: 950px;
     margin: 30px auto 0 auto;
@@ -23,6 +13,15 @@ a:hover {
     .document {
         width: auto !important;
     }
+}
+
+a {
+    text-decoration-line: none;
+    color: black;
+}
+
+a:hover {
+    text-decoration-line: underline;
 }
 
 .header a {
@@ -103,7 +102,7 @@ h1, h2, h3, h4 {
 }
 
 .footer {
-    margin: 20px, ;
+    margin: 20px;
     text-align: center;
     color: #838383;
     font-size: small;

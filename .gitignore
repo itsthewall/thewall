@@ -20,3 +20,4 @@ emails/
 static/images/
 
 .DS_Store
+sendgrid.env
